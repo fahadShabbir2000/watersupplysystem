@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input {
+            margin: 5px;
+            padding: 10px;
+            width: 200px;
+        }
+
+        button {
+            padding: 10px 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Modal styles */
+        #updateModal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #updateModal div {
+            background-color: white;
+            padding: 20px;
+            margin: 100px auto;
+            width: 300px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>User Management</h1>
+
+    <!-- Dropdown for schema selection -->
+    <form>
+        <select id="schemaSelect">
+            <option value="">Select Schema</option>
+            <option value="Customer">Customer</option>
+            <!-- Add other schemas as needed -->
+        </select>
+    </form>
+
+    <table id="userTable">
+        <thead>
+            <tr id="tableHeaders"></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <script>
+        const schemaSelect = document.getElementById('schemaSelect');
+        const userTable = document.getElementById('userTable').getElementsByTagName('tbody')[0];
+        const tableHeaders = document.getElementById('tableHeaders');
+
+        // Function to fetch users based on selected schema
+        async function fetchUsers(schema) {
+            try {
+                const response = await fetch(`/api/${schema.toLowerCase()}s`);
+                if (!response.ok) {
+                    throw new Error(`Error fetching ${schema} data`);
+                }
+                const users = await response.json();
+                console.log('Users fetched:', users);
+                displayUsers(users, schema);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        }
+
+        // Function to display users based on schema
+        function displayUsers(users, schema) {
+            userTable.innerHTML = ''; // Clear the table
+            tableHeaders.innerHTML = ''; // Clear table headers
+
+            if (schema === 'Customer') {
+                // Set headers for Customer schema
+                tableHeaders.innerHTML = `
+                    <th>CustomerID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                    <th>SubscriptionType</th>
+                    <th>PaymentMethod</th>
+                    <th>Balance</th>
+                `;
+
+                // Populate the table with Customer data
+                users.forEach(user => {
+                    const row = userTable.insertRow();
+                    row.innerHTML = `
+                        <td>${user.CustomerID}</td>
+                        <td>${user.Name}</td>
+                        <td>${user.Email}</td>
+                        <td>${user.Phone}</td>
+                        <td>${user.Address}</td>
+                        <td>${user.SubscriptionType}</td>
+                        <td>${user.PaymentMethod}</td>
+                        <td>${user.Balance}</td>
+                    `;
+                });
+            }
+
+            // Add more schema conditions here for other schemas
+        }
+
+        // Event listener for dropdown change
+        schemaSelect.addEventListener('change', () => {
+            const selectedSchema = schemaSelect.value;
+            console.log('Selected schema:', selectedSchema);
+            
+            if (selectedSchema) {
+                fetchUsers(selectedSchema); // Fetch and display data for selected schema
+            } else {
+                userTable.innerHTML = ''; // Clear table if no schema is selected
+                tableHeaders.innerHTML = ''; // Clear table headers
+            }
+        });
+
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input {
+            margin: 5px;
+            padding: 10px;
+            width: 200px;
+        }
+
+        button {
+            padding: 10px 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th,
+        td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* Modal styles */
+        #updateModal {
+            display: none;
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        #updateModal div {
+            background-color: white;
+            padding: 20px;
+            margin: 100px auto;
+            width: 300px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>User Management</h1>
+
+    <form id="userForm">
+        <input type="text" id="name" placeholder="Name" required>
+        <input type="email" id="email" placeholder="Email" required>
+        <button type="submit">Add User</button>
+    </form>
+
+    <table id="userTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Actions</th>                        
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <!-- Update User Modal -->
+    <div id="updateModal">
+        <div>
+            <h2>Update User</h2>
+            <input type="text" id="updateName" placeholder="Name" required>
+            <input type="email" id="updateEmail" placeholder="Email" required>
+            <button id="saveButton">Save</button>
+            <button id="cancelButton" style="margin-left: 10px;">Cancel</button>
+        </div>
+    </div>
+
+    <script>
+        const userForm = document.getElementById('userForm');
+        const userTable = document.getElementById('userTable').getElementsByTagName('tbody')[0];
+        let currentUserId; // Variable to store the ID of the user to be updated
+
+        // Fetch users on page load
+        window.onload = fetchUsers;
+
+        async function fetchUsers() {
+            const response = await fetch('/users');
+            const users = await response.json();
+            displayUsers(users);
+        }
+
+        function displayUsers(users) {
+            userTable.innerHTML = ''; // Clear the table
+            users.forEach(user => {
+                const row = userTable.insertRow();
+                row.innerHTML = `
+                    <td>${user.uniqueId}</td>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>
+                        <button onclick="updateUser('${user._id}')">Update</button>
+                        <button onclick="deleteUser('${user._id}')">Delete</button>
+                    </td>
+                `;
+            });
+        }
+
+        userForm.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Prevent form submission
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+
+            const response = await fetch('/users', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email })
+            });
+
+            if (response.ok) {
+                fetchUsers(); // Refresh user list
+                userForm.reset(); // Clear form fields
+            }
+        });
+
+        async function updateUser(id) {
+            currentUserId = id; // Store the current user ID for later use
+            const response = await fetch(`/users/${id}`);
+            const user = await response.json();
+
+            // Fill in the modal input fields with the user's current data
+            document.getElementById('updateName').value = user.name;
+            document.getElementById('updateEmail').value = user.email;
+
+            // Show the modal
+            document.getElementById('updateModal').style.display = 'block';
+        }
+
+        // Add event listener for the save button in the modal
+        document.getElementById('saveButton').addEventListener('click', async () => {
+            const name = document.getElementById('updateName').value;
+            const email = document.getElementById('updateEmail').value;
+
+            const response = await fetch(`/users/${currentUserId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name, email })
+            });
+
+            if (response.ok) {
+                fetchUsers(); // Refresh user list
+                document.getElementById('updateModal').style.display = 'none'; // Hide the modal
+            } else {
+                console.error('Error updating user');
+            }
+        });
+
+        // Add event listener for the cancel button to close the modal
+        document.getElementById('cancelButton').addEventListener('click', () => {
+            document.getElementById('updateModal').style.display = 'none'; // Hide the modal
+        });
+
+        async function deleteUser(id) {
+            const response = await fetch(`/users/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                fetchUsers(); // Refresh user list
+            }
+        }
+    </script>
+</body>
+
+</html>
